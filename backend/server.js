@@ -133,10 +133,10 @@ function initializeDatabase() {
   `);
 
   // Create default admin user
-  const defaultPassword = bcrypt.hashSync('dada', 10);
+  const defaultPassword = bcrypt.hashSync('Password123', 10);
   db.run(`
     INSERT OR IGNORE INTO users (username, password, role) 
-    VALUES ('atinukeade', ?, 'admin')
+    VALUES ('Admin2026', ?, 'admin')
   `, [defaultPassword]);
 
   console.log('Database tables initialized');
