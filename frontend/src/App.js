@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import LoginForm from './components/LoginForm';
