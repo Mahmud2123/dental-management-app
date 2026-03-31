@@ -11,7 +11,7 @@ import Treatments from './pages/Treatments';
 import Billing from './pages/Billing';
 import Search from './pages/Search';
 import Reports from './pages/Reports';
-import Appointments from './pages/Appointments';
+import Appointments from './pages/Appointment';
 
 const DentalManagementApp = () => {
   const { user, loading: authLoading, login, logout } = useAuth();
