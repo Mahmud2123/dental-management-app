@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import LoginForm from './components/LoginForm';
@@ -10,68 +11,40 @@ import Treatments from './pages/Treatments';
 import Billing from './pages/Billing';
 import Search from './pages/Search';
 import Reports from './pages/Reports';
-import Appointments from './pages/Appointments'; // Fixed: plural
-import { authAPI } from './services/api';
+import Appointments from './pages/Appointments';
 
 const DentalManagementApp = () => {
-  const [currentView, setCurrentView] = useState('login');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Added loading state
+  const { user, loading: authLoading, login, logout } = useAuth();
+
+  const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedPatient, setSelectedPatient] = useState(null);
-  const [user, setUser] = useState(null);
 
-  // Check auth status on mount
-  useEffect(() => {
-    const verifyAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const data = await authAPI.verify();
-          setIsLoggedIn(true);
-          setUser(data.user);
-          setCurrentView('dashboard');
-        } catch (error) {
-          localStorage.removeItem('token');
-          console.error('Auth verification failed:', error);
-        }
-      }
-      setIsLoading(false);
-    };
-    verifyAuth();
-  }, []);
-
-  // Clock timer
+  // Clock
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Navigation handler with sidebar auto-close on mobile
   const navigateTo = useCallback((view) => {
     setCurrentView(view);
-    setSidebarOpen(false); // Auto-close sidebar on mobile navigation
-    window.scrollTo(0, 0); // Scroll to top on view change
+    setSidebarOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   const handleLogin = useCallback((userData, token) => {
-    localStorage.setItem('token', token);
-    setIsLoggedIn(true);
-    setUser(userData);
+    login(userData, token);
     setCurrentView('dashboard');
-  }, []);
+  }, [login]);
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('token');
-    setIsLoggedIn(false);
-    setUser(null);
+    logout();
     setSelectedPatient(null);
     setCurrentView('login');
     setSidebarOpen(false);
-  }, []);
+  }, [logout]);
 
-  // Centralized view configuration
   const viewConfig = {
     dashboard: { title: 'Dashboard', component: Dashboard },
     patients: { title: 'Patient Records', component: Patients },
@@ -93,7 +66,6 @@ const DentalManagementApp = () => {
     const Component = config.component;
     const commonProps = { setCurrentView: navigateTo };
 
-    // Add specific props based on view
     switch (currentView) {
       case 'view-patient':
         return <Component {...commonProps} patient={selectedPatient} />;
@@ -105,8 +77,7 @@ const DentalManagementApp = () => {
     }
   };
 
-  // Loading state
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
@@ -114,7 +85,7 @@ const DentalManagementApp = () => {
     );
   }
 
-  if (!isLoggedIn) {
+  if (!user) {
     return <LoginForm onLogin={handleLogin} />;
   }
 
@@ -144,10 +115,10 @@ const DentalManagementApp = () => {
         </main>
       </div>
 
-      {/* Mobile overlay */}
+      {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity" 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
