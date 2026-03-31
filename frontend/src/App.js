@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -21,7 +21,7 @@ const DentalManagementApp = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedPatient, setSelectedPatient] = useState(null);
 
-  // Clock
+  // Clock - memoized to prevent unnecessary updates
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -45,7 +45,8 @@ const DentalManagementApp = () => {
     setSidebarOpen(false);
   }, [logout]);
 
-  const viewConfig = {
+  // Memoized view configuration
+  const viewConfig = useMemo(() => ({
     dashboard: { title: 'Dashboard', component: Dashboard },
     patients: { title: 'Patient Records', component: Patients },
     'add-patient': { title: 'Add New Patient', component: AddPatient },
@@ -55,11 +56,14 @@ const DentalManagementApp = () => {
     appointments: { title: 'Appointments', component: Appointments },
     search: { title: 'Search Records', component: Search },
     reports: { title: 'Reports', component: Reports },
-  };
+  }), []);
 
-  const getViewTitle = () => viewConfig[currentView]?.title || 'Dashboard';
+  const getViewTitle = useCallback(() => 
+    viewConfig[currentView]?.title || 'Dashboard', 
+  [currentView, viewConfig]);
 
-  const renderCurrentView = () => {
+  // Memoized view renderer for performance
+  const renderCurrentView = useMemo(() => {
     const config = viewConfig[currentView];
     if (!config) return <Dashboard setCurrentView={navigateTo} />;
 
@@ -75,12 +79,19 @@ const DentalManagementApp = () => {
       default:
         return <Component {...commonProps} />;
     }
-  };
+  }, [currentView, viewConfig, navigateTo, selectedPatient]);
 
+  // Loading state with improved UI
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-medical-200 rounded-full animate-spin border-t-medical-600" />
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent rounded-full animate-pulse" />
+          </div>
+          <p className="text-calm-500 font-medium animate-pulse">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -90,7 +101,7 @@ const DentalManagementApp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20">
       <Sidebar 
         currentView={currentView} 
         setCurrentView={navigateTo} 
@@ -100,7 +111,7 @@ const DentalManagementApp = () => {
         user={user}
       />
       
-      <div className="lg:ml-64 min-h-screen transition-all duration-300">
+      <div className="lg:ml-72 min-h-screen transition-all duration-300 ease-smooth">
         <Header 
           title={getViewTitle()} 
           currentTime={currentTime} 
@@ -108,17 +119,17 @@ const DentalManagementApp = () => {
           user={user}
         />
         
-        <main className="p-4 lg:p-6 max-w-7xl mx-auto">
-          <div className="animate-fadeIn">
-            {renderCurrentView()}
+        <main className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+          <div className="animate-fade-in">
+            {renderCurrentView}
           </div>
         </main>
       </div>
 
-      {/* Mobile Overlay */}
+      {/* Mobile Overlay - improved with blur */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -127,4 +138,4 @@ const DentalManagementApp = () => {
   );
 };
 
-export default DentalManagementApp;
+export default React.memo(DentalManagementApp);
